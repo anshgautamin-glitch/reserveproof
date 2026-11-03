@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReserveProof — Live Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B1F3A; --navy2:#13305A; --ink:#1B2333; --muted:#5B6678; --line:#E3E8F0; --bg:#F4F7FB; --card:#FFFFFF;
+  --teal:#0E9F8A; --teal-bg:#E3F6F2; --red:#D64545; --red-bg:#FDECEC; --amber:#C98A0B; --amber-bg:#FFF5DD; --blue:#2F6FED; --blue-bg:#E8F0FE;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+.logo svg{flex:none}
+.tag{font-size:12px;color:#A9B8D0;font-weight:500}
+header .spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-weight:700;font-size:12.5px}
+.pill.ok{background:var(--teal-bg);color:#06705F}.pill.bad{background:var(--red-bg);color:#A12C2C}.pill.idle{background:#24406B;color:#D6E2F5}.pill.warn{background:var(--amber-bg);color:#8A5E00}
+.daybox{font-size:13px;color:#D6E2F5}
+nav.tabs{display:flex;gap:4px;padding:0 24px;background:var(--navy2)}
+nav.tabs button{background:none;border:none;color:#B7C6DD;padding:11px 14px;font:600 13px Inter;cursor:pointer;border-bottom:3px solid transparent}
+nav.tabs button.on{color:#fff;border-bottom-color:#3DD6BE}
+main{padding:20px 24px 40px;max-width:1400px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;gap:16px}
+.g-top{grid-template-columns:1.25fr 1fr}
+.g-3{grid-template-columns:.95fr 1.5fr .95fr}
+@media(max-width:1100px){.g-top,.g-3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card h3{margin:0 0 2px;font-size:14.5px;display:flex;align-items:center;gap:8px}
+.card .sub{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.role{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.r-fin{background:#EDE7FF;color:#5B3CC4}.r-bank{background:var(--blue-bg);color:#1D4FBF}.r-chain{background:#E6F4F1;color:#0A7A69}.r-cust{background:#FFF0E3;color:#B5590E}.r-reg{background:#FDECEC;color:#A12C2C}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 14px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .l{font-size:11.5px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11px;color:var(--muted)}
+.ratio-ok{color:var(--teal)}.ratio-bad{color:var(--red)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.step{border:1.5px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;transition:all .25s}
+.step b{display:block;font-size:12.5px;margin-bottom:2px}
+.step.done{border-style:solid;border-color:#8FD9CB;background:#F2FBF9}
+.step.fail{border-style:solid;border-color:#F0A6A6;background:#FFF5F5}
+.step.run{border-style:solid;border-color:var(--blue);background:var(--blue-bg)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:600 13px Inter;border-radius:8px;padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+button.b:hover{border-color:#B8C4D6}
+button.b.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+button.b.primary:hover{background:#163463}
+button.b.danger{background:#fff;color:#A12C2C;border-color:#F0B8B8}
+button.b.danger:hover{background:var(--red-bg)}
+button.b:disabled{opacity:.5;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:6px 6px;border-bottom:1px solid var(--line)}
+td{padding:6px 6px;border-bottom:1px solid #EEF1F6;font-variant-numeric:tabular-nums}
+td.num,th.num{text-align:right}
+tr.excluded td{color:#A0A8B5;text-decoration:line-through}
+tr.fake td{color:#A12C2C;font-weight:600}
+.mono{font-family:var(--mono);font-size:11.5px}
+.hash{font-family:var(--mono);font-size:11px;color:#41506A;background:#F1F4F9;padding:1px 5px;border-radius:4px}
+.slider-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+input[type=range]{flex:1;accent-color:var(--blue)}
+.tree{overflow-x:auto}
+.tree svg text{font-family:var(--mono)}
+.chain{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
+.block{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;padding:8px 10px;font-size:12px;background:#fff}
+.block.bad{border-left-color:var(--red);background:#FFFAFA}
+.block.rej{border-left-color:var(--amber);background:#FFFCF2}
+.block.broken{outline:2px solid var(--red);outline-offset:-1px}
+.block .top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:3px}
+.block .row{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+.block .row span:last-child{color:var(--ink);text-align:right}
+.alerts{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.alert{border-radius:8px;padding:8px 10px;font-size:12.5px}
+.alert.bad{background:var(--red-bg);color:#7C1F1F}.alert.ok{background:var(--teal-bg);color:#065A4D}.alert.warn{background:var(--amber-bg);color:#6B4A00}.alert.info{background:var(--blue-bg);color:#183F92}
+.alert time{font-family:var(--mono);font-size:11px;opacity:.75;margin-right:6px}
+.scen{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:700px){.scen{grid-template-columns:1fr}.kpis,.steps{grid-template-columns:1fr}}
+.sc{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.sc b{font-size:13px}.sc p{margin:0;font-size:12px;color:var(--muted)}
+.sc .real{font-size:11px;color:#8A5E00;font-weight:600}
+.sc button{align-self:flex-start}
+label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin:8px 0 3px}
+input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:13px Inter;background:#fff}
+.proof{margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size:12px}
+.proof .p{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#FAFBFD}
+.verdict{margin-top:10px;padding:10px 12px;border-radius:9px;font-weight:700;font-size:13.5px}
+.verdict.ok{background:var(--teal-bg);color:#065A4D}.verdict.bad{background:var(--red-bg);color:#7C1F1F}
+.chart{margin-top:12px}.chart svg{width:100%;height:150px}
+.note{font-size:11.5px;color:var(--muted);margin-top:8px}
+pre.code{background:#0D1B2E;color:#D8E3F5;border-radius:12px;padding:18px;overflow:auto;font:12.5px/1.55 var(--mono);max-height:75vh}
+pre.code .c{color:#7C8FAD}pre.code .k{color:#7FD6C6}pre.code .s{color:#F2C879}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.how .card p{margin:6px 0;color:#3A4558;font-size:13px}
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:6px 0 16px}
+.flow .f{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px}
+.flow .f b{display:block;margin-bottom:3px}
+.flow .arrow{align-self:center;color:#9AA6B8;font-weight:700}
+footer{color:var(--muted);font-size:11.5px;text-align:center;padding:10px 24px 30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7L16 2Z" fill="#3DD6BE"/><path d="m10.5 16.2 3.7 3.7 7.6-8" stroke="#0B1F3A" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    ReserveProof
+  </div>
+  <span class="tag">Continuous, blockchain-verified proof that a fintech holds every rupee it owes</span>
+  <span class="spacer"></span>
+  <span class="daybox" id="dayLabel">Day —</span>
+  <span class="pill idle" id="statusPill">● Not yet checked</span>
+</header>
+<nav class="tabs">
+  <button class="on" data-v="demo">Live demo</button>
+  <button data-v="how">How it works</button>
+  <button data-v="code">Smart contract (Solidity)</button>
+</nav>
+
+<main>
+<!-- ================= DEMO ================= -->
+<section class="view on" id="v-demo">
+  <div class="grid g-top">
+    <div class="card">
+      <h3>End-of-day solvency check <span class="role r-chain">Smart contract</span></h3>
+      <div class="sub">Every night: the fintech commits what it owes, the bank attests what it holds, the contract compares them. Nobody can skip, delay or backdate it.</div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Liabilities (owed to customers)</div><div class="v" id="kL">—</div><div class="s">Merkle-sum root, committed by fintech</div></div>
+        <div class="kpi"><div class="l">Reserves (in escrow bank)</div><div class="v" id="kR">—</div><div class="s">Signed by the bank, not the fintech</div></div>
+        <div class="kpi"><div class="l">Reserve ratio</div><div class="v" id="kX">—</div><div class="s">Must stay ≥ 100%</div></div>
+      </div>
+      <div class="steps">
+        <div class="step" id="s1"><b>① Fintech commits liabilities</b><span>Builds Merkle-sum tree, posts only root + total</span></div>
+        <div class="step" id="s2"><b>② Bank attests reserves</b><span>Signs escrow balance with its private key</span></div>
+        <div class="step" id="s3"><b>③ Contract checks solvency</b><span>Reserves ≥ liabilities? Alert if not</span></div>
+      </div>
+      <div class="btns">
+        <button class="b primary" id="btnRun">▶ Run end-of-day check</button>
+        <button class="b" id="btnNext">⏭ Next day (normal activity)</button>
+        <button class="b" id="btnReset">↺ Reset demo</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Alerts &amp; regulator feed <span class="role r-reg">Regulator / Public</span></h3>
+      <div class="sub">Shortfalls are broadcast the instant they happen. No one has to remember to report them.</div>
+      <div class="alerts" id="alerts"></div>
+      <div class="chart" id="chart"></div>
+    </div>
+  </div>
+
+  <div class="grid g-3" style="margin-top:16px">
+    <div class="card">
+      <h3>Customer ledger <span class="role r-fin">Fintech</span></h3>
+      <div class="sub">Sikka Wallet* — balances it owes customers. Stays private, off-chain.</div>
+      <table><thead><tr><th>Customer</th><th>ID</th><th class="num">Balance</th></tr></thead><tbody id="ledger"></tbody></table>
+      <div style="margin-top:14px"><h3>Escrow account <span class="role r-bank">Escrow bank</span></h3>
+      <div class="sub" style="margin-bottom:0">Sahyog Bank* — the real money held for Sikka's customers.</div>
+      <div class="slider-row"><input type="range" id="escrowSlider" min="0" max="100" step="1"><b id="escrowVal" style="min-width:110px;text-align:right">—</b></div>
+      <div class="note">Drag to simulate the fintech quietly moving money out of escrow.</div></div>
+    </div>
+    <div class="card tree">
+      <h3>Merkle-sum tree (today) <span class="role r-fin">Built off-chain</span></h3>
+      <div class="sub">Each box = hash + running total. Only the top box (the root) goes on-chain.</div>
+      <div id="treeBox"><div class="note">Run the end-of-day check to build today's tree.</div></div>
+    </div>
+    <div class="card">
+      <h3>Blockchain record <span class="role r-chain">Immutable</span></h3>
+      <div class="sub">One block per day. Each block is chained to the previous one by its hash.</div>
+      <div class="btns" style="margin-bottom:8px"><button class="b" id="btnIntegrity">🔍 Verify chain integrity</button></div>
+      <div class="chain" id="chain"></div>
+    </div>
+  </div>
+
+  <div class="grid g-top" style="margin-top:16px">
+    <div class="card">
+      <h3>Try to cheat <span class="role r-fin">Fraud scenarios</span></h3>
+      <div class="sub">Each scenario copies a real-world failure. Click one and watch how ReserveProof catches it.</div>
+      <div class="scen">
+        <div class="sc"><b>💸 Quietly drain the escrow</b><p>The fintech moves 20% of customer money out for its own use, while the app still shows full balances.</p><span class="real">Real case: Synapse (US, 2024): $65–95M gap; PhonePe fined ₹21 lakh (2025) for escrow shortfall</span><button class="b danger" data-sc="drain">Simulate</button></div>
+        <div class="sc"><b>🕳️ Hide the hole with a fake account</b><p>Insert a fake account with a large negative balance, so the hole appears to cancel out.</p><span class="real">Real case: FTX hid an ~$8B shortfall in a fake "Korean friend" account (2022)</span><button class="b danger" data-sc="negative">Simulate</button></div>
+        <div class="sc"><b>🙈 Leave a customer out</b><p>Drop one big customer from the snapshot so liabilities look smaller than they are.</p><span class="real">Weakness of one-off audits: nobody checks individual accounts</span><button class="b danger" data-sc="omit">Simulate</button></div>
+        <div class="sc"><b>✏️ Rewrite yesterday's record</b><p>After a bad day, edit the stored figures to make yesterday look solvent.</p><span class="real">Backdated or "window-dressed" books</span><button class="b danger" data-sc="rewrite">Simulate</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Verify my balance <span class="role r-cust">Customer</span></h3>
+      <div class="sub">Any customer can prove their money was counted without seeing anyone else's balance.</div>
+      <label for="custSel">I am</label>
+      <select id="custSel"></select>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>My customer ID</label><input type="text" id="vId"></div>
+        <div><label>My balance (₹)</label><input type="text" id="vBal"></div>
+      </div>
+      <label>My private salt (stored only in my app)</label><input type="text" id="vSalt" class="mono">
+      <div class="btns" style="margin-top:10px"><button class="b primary" id="btnVerify">✓ Verify against latest block</button></div>
+      <div id="proofOut"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW ================= -->
+<section class="view" id="v-how">
+  <div class="flow">
+    <div class="f"><b>1 · Fintech</b>Hashes every customer balance into a Merkle-sum tree. Posts only the root + total liabilities on-chain.</div><div class="arrow">→</div>
+    <div class="f"><b>2 · Escrow bank</b>Independently signs its end-of-day escrow balance and posts it on-chain.</div><div class="arrow">→</div>
+    <div class="f"><b>3 · Smart contract</b>Compares reserves vs liabilities. If short, emits a public ShortfallAlert instantly.</div><div class="arrow">→</div>
+    <div class="f"><b>4 · Customers &amp; regulator</b>Customers verify their own inclusion; the regulator watches a live, tamper-proof feed.</div>
+  </div>
+  <div class="how">
+    <div class="card"><h3>Why blockchain, not a database?</h3><p>Today the fintech keeps the ledger, and customers, the bank and the regulator all have to trust its copy. At Synapse, the books and the bank's records disagreed, and nobody could prove which was right.</p><p>A shared, append-only chain gives all four parties the same timestamped record that no single party can edit or backdate.</p></div>
+    <div class="card"><h3>Why a Merkle-sum tree?</h3><p>It combines millions of balances into one 32-byte fingerprint plus a total. Change any balance by ₹1 and the fingerprint changes.</p><p>Each customer gets a short proof path showing their balance is inside the total, without revealing anyone else's balance.</p></div>
+    <div class="card"><h3>What it fixes in today's "proof of reserves"</h3><p><b>Point-in-time → continuous:</b> daily, so the fintech can't borrow money just for audit day.</p><p><b>Assets only → assets and liabilities:</b> both sides are checked.</p><p><b>Self-reported → bank-attested:</b> the custodian bank signs the reserves.</p><p><b>Negative-balance trick → blocked:</b> negative balances are rejected.</p></div>
+    <div class="card"><h3>Privacy (DPDP Act)</h3><p>No names, account numbers or individual balances go on-chain, only hashes and totals.</p><p>Each customer's leaf includes a private salt, so their hash can't be guessed.</p><p>Production would use a permissioned chain (e.g. Hyperledger Besu) run by the fintech, the bank and the regulator.</p></div>
+    <div class="card"><h3>What this prototype simulates</h3><p>Real: SHA-256 hashing, Merkle-sum proofs, ECDSA bank signatures (Web Crypto), hash-chained blocks.</p><p>Simulated: the network itself. The Solidity contract in the next tab compiles and is ready to deploy to a testnet (e.g. Sepolia) as the next step.</p></div>
+    <div class="card"><h3>Who pays</h3><p>Fintechs that hold customer money (PPI wallets, payment aggregators, P2P lending platforms, BaaS apps) pay a SaaS fee for a "ReserveProof Verified" badge and automatic compliance reporting.</p><p>Partner banks and regulators get read access.</p></div>
+  </div>
+</section>
+
+<!-- ================= CODE ================= -->
+<section class="view" id="v-code">
+  <div class="card" style="margin-bottom:12px"><h3>ReserveProof.sol</h3><div class="sub" style="margin:0">Compiles with Solidity 0.8.24. Uses <span class="mono">sha256(abi.encodePacked(…))</span>, the same Merkle-sum hashing as this demo, so a proof generated here verifies on-chain.</div></div>
+  <pre class="code" id="solCode"><span class="c">// SPDX-License-Identifier: MIT</span>
+<span class="k">pragma</span> solidity ^0.8.20;
+
+<span class="c">/// @title ReserveProof — daily, tamper-proof proof of solvency for a custodial fintech</span>
+<span class="c">/// @notice The fintech commits a Merkle-sum root of all customer balances (its liabilities).</span>
+<span class="c">///         The independent escrow bank attests the money it actually holds (the reserves).</span>
+<span class="c">///         The contract compares the two and raises an alert the moment reserves &lt; liabilities.</span>
+<span class="c">///         Only hashes and totals go on-chain — no names, no account numbers (DPDP-friendly).</span>
+<span class="k">contract</span> ReserveProof {
+    <span class="k">struct</span> Snapshot {
+        <span class="k">bytes32</span> liabilitiesRoot;   <span class="c">// Merkle-sum root of all customer balances</span>
+        <span class="k">uint256</span> totalLiabilities;  <span class="c">// sum of all balances, in paise</span>
+        <span class="k">uint256</span> attestedReserves;  <span class="c">// escrow balance signed off by the bank, in paise</span>
+        <span class="k">uint64</span>  committedAt;
+        <span class="k">bool</span>    liabilitiesCommitted;
+        <span class="k">bool</span>    reservesAttested;
+        <span class="k">bool</span>    checked;
+        <span class="k">bool</span>    solvent;
+    }
+
+    <span class="k">address</span> <span class="k">public</span> <span class="k">immutable</span> fintech;     <span class="c">// e.g. a wallet / PPI issuer</span>
+    <span class="k">address</span> <span class="k">public</span> <span class="k">immutable</span> escrowBank;  <span class="c">// the bank holding customer money</span>
+    <span class="k">address</span> <span class="k">public</span> <span class="k">immutable</span> regulator;   <span class="c">// e.g. RBI (read access + alerts)</span>
+
+    <span class="k">mapping</span>(<span class="k">uint256</span> =&gt; Snapshot) <span class="k">public</span> snapshots; <span class="c">// key: day as yyyymmdd</span>
+    <span class="k">uint256</span> <span class="k">public</span> latestDay;
+
+    <span class="k">event</span> LiabilitiesCommitted(<span class="k">uint256</span> indexed day, <span class="k">bytes32</span> root, <span class="k">uint256</span> totalLiabilities);
+    <span class="k">event</span> ReservesAttested(<span class="k">uint256</span> indexed day, <span class="k">uint256</span> reserves);
+    <span class="k">event</span> SolvencyChecked(<span class="k">uint256</span> indexed day, <span class="k">uint256</span> reserveRatioBps, <span class="k">bool</span> solvent);
+    <span class="k">event</span> ShortfallAlert(<span class="k">uint256</span> indexed day, <span class="k">uint256</span> shortfall);
+
+    <span class="k">modifier</span> only(<span class="k">address</span> who) {
+        <span class="k">require</span>(msg.sender == who, <span class="s">"ReserveProof: not authorised"</span>);
+        _;
+    }
+
+    <span class="k">constructor</span>(<span class="k">address</span> _fintech, <span class="k">address</span> _escrowBank, <span class="k">address</span> _regulator) {
+        fintech = _fintech;
+        escrowBank = _escrowBank;
+        regulator = _regulator;
+    }
+
+    <span class="c">/// @notice Fintech publishes today's liabilities. Past days can never be rewritten.</span>
+    <span class="k">function</span> commitLiabilities(<span class="k">uint256</span> day, <span class="k">bytes32</span> root, <span class="k">uint256</span> totalLiabilities) <span class="k">external</span> only(fintech) {
+        <span class="k">require</span>(day &gt; latestDay, <span class="s">"ReserveProof: day already committed"</span>);
+        <span class="k">require</span>(root != <span class="k">bytes32</span>(0), <span class="s">"ReserveProof: empty root"</span>);
+        Snapshot <span class="k">storage</span> s = snapshots[day];
+        s.liabilitiesRoot = root;
+        s.totalLiabilities = totalLiabilities;
+        s.committedAt = <span class="k">uint64</span>(block.timestamp);
+        s.liabilitiesCommitted = <span class="k">true</span>;
+        latestDay = day;
+        <span class="k">emit</span> LiabilitiesCommitted(day, root, totalLiabilities);
+        <span class="k">if</span> (s.reservesAttested) _check(day);
+    }
+
+    <span class="c">/// @notice Escrow bank attests the end-of-day balance it actually holds. Once only.</span>
+    <span class="k">function</span> attestReserves(<span class="k">uint256</span> day, <span class="k">uint256</span> reserves) <span class="k">external</span> only(escrowBank) {
+        Snapshot <span class="k">storage</span> s = snapshots[day];
+        <span class="k">require</span>(!s.reservesAttested, <span class="s">"ReserveProof: already attested"</span>);
+        s.attestedReserves = reserves;
+        s.reservesAttested = <span class="k">true</span>;
+        <span class="k">emit</span> ReservesAttested(day, reserves);
+        <span class="k">if</span> (s.liabilitiesCommitted) _check(day);
+    }
+
+    <span class="k">function</span> _check(<span class="k">uint256</span> day) <span class="k">internal</span> {
+        Snapshot <span class="k">storage</span> s = snapshots[day];
+        s.checked = <span class="k">true</span>;
+        s.solvent = s.attestedReserves &gt;= s.totalLiabilities;
+        <span class="k">uint256</span> ratioBps = s.totalLiabilities == 0 ? 10000 : (s.attestedReserves * 10000) / s.totalLiabilities;
+        <span class="k">emit</span> SolvencyChecked(day, ratioBps, s.solvent);
+        <span class="k">if</span> (!s.solvent) {
+            <span class="c">// Fires instantly and publicly — no one can "forget" to report a shortfall.</span>
+            <span class="k">emit</span> ShortfallAlert(day, s.totalLiabilities - s.attestedReserves);
+        }
+    }
+
+    <span class="c">/// @notice Any customer can check their balance was counted, without revealing anyone else's.</span>
+    <span class="c">/// @param leafHash  sha256 of the customer's (id | balance | private salt), computed in their app</span>
+    <span class="c">/// @param leafSum   the customer's balance in paise</span>
+    <span class="c">/// @param siblingHashes / siblingSums  the Merkle-sum proof path given by the fintech</span>
+    <span class="c">/// @param siblingIsLeft  true if the sibling sits on the left at that level</span>
+    <span class="k">function</span> verifyInclusion(
+        <span class="k">uint256</span> day,
+        <span class="k">bytes32</span> leafHash,
+        <span class="k">uint256</span> leafSum,
+        <span class="k">bytes32</span>[] <span class="k">calldata</span> siblingHashes,
+        <span class="k">uint256</span>[] <span class="k">calldata</span> siblingSums,
+        <span class="k">bool</span>[] <span class="k">calldata</span> siblingIsLeft
+    ) <span class="k">external</span> <span class="k">view</span> <span class="k">returns</span> (<span class="k">bool</span>) {
+        <span class="k">require</span>(
+            siblingHashes.length == siblingSums.length &amp;&amp; siblingSums.length == siblingIsLeft.length,
+            <span class="s">"ReserveProof: bad proof"</span>
+        );
+        <span class="k">bytes32</span> h = leafHash;
+        <span class="k">uint256</span> sum = leafSum;
+        <span class="k">for</span> (<span class="k">uint256</span> i = 0; i &lt; siblingHashes.length; i++) {
+            <span class="k">if</span> (siblingIsLeft[i]) {
+                h = sha256(abi.encodePacked(siblingHashes[i], siblingSums[i], h, sum));
+            } <span class="k">else</span> {
+                h = sha256(abi.encodePacked(h, sum, siblingHashes[i], siblingSums[i]));
+            }
+            sum += siblingSums[i];
+        }
+        Snapshot <span class="k">storage</span> s = snapshots[day];
+        <span class="k">return</span> h == s.liabilitiesRoot &amp;&amp; sum == s.totalLiabilities;
+    }
+}
+</pre>
+</section>
+</main>
+<footer>*Sikka Wallet and Sahyog Bank are fictional. Prototype for an SSCBS BBA (FIA) Digital Finance capstone. Hashing and signatures are real cryptography; the blockchain network is simulated in the browser.</footer>
+
+<script>
+(() => {
+const enc = new TextEncoder();
+const $ = id => document.getElementById(id);
+const fmt = p => (p<0?'−':'') + '₹' + (Math.abs(p)/100).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
+const R = x => Math.round(x/100)*100; // keep amounts in whole rupees
+const hex = u8 => Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join('');
+const short = h => (typeof h==='string'?h:hex(h)).slice(0,10)+'…';
+async function sha(bytes){ return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
+function u256(n){ let b=BigInt(n); const out=new Uint8Array(32); for(let i=31;i>=0;i--){out[i]=Number(b&255n); b>>=8n;} return out; }
+function cat(...arrs){ const len=arrs.reduce((a,x)=>a+x.length,0); const o=new Uint8Array(len); let k=0; for(const a of arrs){o.set(a,k);k+=a.length;} return o; }
+const ZERO = new Uint8Array(32);
+const randSalt = () => hex(crypto.getRandomValues(new Uint8Array(8)));
+
+const BASE = [
+  ['Aarav Sharma','C-1001',1245000],['Priya Nair','C-1002',4820000],['Rohan Gupta','C-1003',312500],['Ananya Iyer','C-1004',2075000],
+  ['Kabir Singh','C-1005',98000],['Meera Joshi','C-1006',1560000],['Vikram Rao','C-1007',735000],['Sneha Kulkarni','C-1008',2290000]
+];
+let S;
+const bank = {};
+
+async function initBank(){
+  const kp = await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+  bank.priv = kp.privateKey; bank.pub = kp.publicKey;
+}
+function freshState(){
+  const customers = BASE.map(([name,id,bal])=>({name,id,bal,salt:randSalt(),excluded:false,fake:false}));
+  const total = customers.reduce((a,c)=>a+c.bal,0);
+  return { day:1, customers, escrow: R(total*1.02), chain:[], tree:null, alerts:[], pending:null, lastStatus:'idle' };
+}
+const dateOf = d => { const dt=new Date(2026,10,0+d); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); };
+const dayKey = d => { const dt=new Date(2026,10,0+d); return dt.getFullYear()*10000+(dt.getMonth()+1)*100+dt.getDate(); };
+
+function liveLiabilities(){ return S.customers.filter(c=>!c.fake).reduce((a,c)=>a+c.bal,0); }
+
+/* ---------- Merkle-sum tree ---------- */
+async function leafHash(c){ return sha(enc.encode(`${c.id}|${c.bal}|${c.salt}`)); }
+async function nodeHash(l,r){ return sha(cat(l.hash,u256(l.sum),r.hash,u256(r.sum))); }
+async function buildTree(entries){
+  let level=[];
+  for(const c of entries) level.push({hash:await leafHash(c),sum:c.bal,label:c.name.split(' ')[0],id:c.id,fake:c.fake});
+  const levels=[level];
+  while(level.length>1){
+    if(level.length%2) level.push({hash:ZERO,sum:0,label:'(empty)',pad:true});
+    const next=[]; for(let i=0;i<level.length;i+=2){ next.push({hash:await nodeHash(level[i],level[i+1]),sum:level[i].sum+level[i+1].sum}); }
+    levels.push(next); level=next;
+  }
+  return levels;
+}
+function proofFor(levels, idx){
+  const path=[]; let i=idx;
+  for(let L=0;L<levels.length-1;L++){
+    const sib = i%2===0 ? i+1 : i-1;
+    path.push({hash:levels[L][sib].hash,sum:levels[L][sib].sum,isLeft:sib<i});
+    i=Math.floor(i/2);
+  }
+  return path;
+}
+
+/* ---------- blocks ---------- */
+async function blockHash(b){
+  return hex(await sha(enc.encode(JSON.stringify([b.n,b.dayKey,b.root,b.liab,b.reserves,b.sig,b.status,b.prev]))));
+}
+function log(kind,msg){ S.alerts.unshift({kind,msg,t:`Day ${S.day} · ${new Date().toLocaleTimeString('en-IN',{hour12:false})}`}); }
+
+/* ---------- end-of-day run ---------- */
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function setStep(id,cls){ const e=$(id); e.classList.remove('done','fail','run'); if(cls) e.classList.add(cls); }
+let busy=false;
+async function runEOD(){
+  if(busy) return; busy=true; lockButtons(true);
+  ['s1','s2','s3'].forEach(s=>setStep(s,null)); $('proofOut').innerHTML='';
+  if(S.chain.length && S.chain[S.chain.length-1].day===S.day){ log('info',`Day ${S.day} is already on-chain. The contract refuses a second commit for the same day. Click "Next day".`); busy=false; lockButtons(false); render(); return; }
+  // Step 1
+  setStep('s1','run'); await sleep(450);
+  const entries = S.customers.filter(c=>!c.excluded);
+  const negative = entries.find(c=>c.bal<0);
+  const levels = await buildTree(entries);
+  S.tree = {levels, entries, day:S.day};
+  const root = hex(levels[levels.length-1][0].hash), liab = levels[levels.length-1][0].sum;
+  if(negative){
+    setStep('s1','fail');
+    const prev = S.chain.length? S.chain[S.chain.length-1].hash : '0'.repeat(64);
+    const b={n:S.chain.length+1,day:S.day,dayKey:dayKey(S.day),root,liab,reserves:null,sig:null,status:'REJECTED',prev,note:`Range check failed: negative balance in account ${negative.id}`};
+    b.hash=await blockHash(b); S.chain.push(b);
+    log('bad',`🚫 Commit REJECTED: account ${negative.id} has a negative balance (${fmt(negative.bal)}). A real customer can't owe the wallet money, so this is a disguised hole. Regulator notified.`);
+    S.lastStatus='bad'; setStep('s2',null); setStep('s3','fail');
+    busy=false; lockButtons(false); render(); return;
+  }
+  setStep('s1','done'); await sleep(450);
+  // Step 2
+  setStep('s2','run'); await sleep(450);
+  const msg = enc.encode(`${dayKey(S.day)}|${S.escrow}`);
+  const sigBuf = new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},bank.priv,msg));
+  const sigOk = await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},bank.pub,sigBuf,msg);
+  setStep('s2',sigOk?'done':'fail'); await sleep(450);
+  // Step 3
+  setStep('s3','run'); await sleep(450);
+  const solvent = S.escrow >= liab;
+  const ratio = liab? S.escrow/liab : 1;
+  const prev = S.chain.length? S.chain[S.chain.length-1].hash : '0'.repeat(64);
+  const b={n:S.chain.length+1,day:S.day,dayKey:dayKey(S.day),root,liab,reserves:S.escrow,sig:hex(sigBuf),status:solvent?'SOLVENT':'SHORTFALL',prev,ratio};
+  b.hash = await blockHash(b); S.chain.push(b);
+  setStep('s3', solvent?'done':'fail');
+  if(solvent){ log('ok',`✅ Day ${S.day} solvent: reserves ${fmt(S.escrow)} ≥ liabilities ${fmt(liab)} (${(ratio*100).toFixed(1)}%). Block #${b.n} written.`); S.lastStatus='ok'; }
+  else { log('bad',`🚨 ShortfallAlert: reserves are ${fmt(liab-S.escrow)} short (${(ratio*100).toFixed(1)}% covered). Broadcast to the regulator and every customer at the moment of the check.`); S.lastStatus='bad'; }
+  if(S.customers.some(c=>c.excluded)) S.lastStatus = solvent? 'warn-hidden':'bad';
+  busy=false; lockButtons(false); render();
+}
+
+function nextDay(){
+  if(busy) return;
+  if(!S.chain.length || S.chain[S.chain.length-1].day!==S.day){ log('info','Run today\'s end-of-day check before moving to the next day.'); render(); return; }
+  S.day++;
+  // honest activity: random deposits/spends, escrow moves by the same amount
+  for(const c of S.customers){ if(c.fake) continue; const d = R((Math.random()-0.45)*0.12*c.bal); const nb=Math.max(0,c.bal+d); S.escrow += (nb-c.bal); c.bal=nb; }
+  ['s1','s2','s3'].forEach(s=>setStep(s,null));
+  log('info',`📅 Day ${S.day}: customers paid and topped up their wallets. Escrow moved by exactly the same amounts.`);
+  S.tree=null; render();
+}
+
+/* ---------- scenarios ---------- */
+async function scenario(k){
+  if(busy) return;
+  if(S.chain.length && S.chain[S.chain.length-1].day===S.day && k!=='rewrite'){ nextDayQuiet(); }
+  const live = liveLiabilities();
+  if(k==='drain'){
+    const take = R(live*0.20); S.escrow -= take;
+    log('warn',`💸 Scenario: Sikka quietly moved ${fmt(take)} out of escrow into its own investments. The app still shows every customer their full balance.`);
+    render(); await runEOD();
+  } else if(k==='negative'){
+    const hole = R(live*0.25); S.escrow -= hole;
+    S.customers.push({name:'"Korean friend"',id:'C-9999',bal:-hole,salt:randSalt(),excluded:false,fake:true});
+    log('warn',`🕳️ Scenario: ${fmt(hole)} is missing from escrow, and a fake account with balance −${fmt(hole)} was added so the totals appear to match.`);
+    render(); await runEOD();
+  } else if(k==='omit'){
+    const victim = S.customers.find(c=>c.id==='C-1002');
+    victim.excluded = true; S.escrow -= victim.bal;
+    log('warn',`🙈 Scenario: ${fmt(victim.bal)} taken from escrow, and Priya Nair's account was left out of tonight's snapshot so liabilities look smaller.`);
+    render(); await runEOD();
+    log('info','👉 The headline check looks fine. Now go to "Verify my balance", choose Priya Nair and click Verify.');
+    $('custSel').value='C-1002'; fillVerify(); render();
+  } else if(k==='rewrite'){
+    const target = S.chain.length>=2 ? S.chain[S.chain.length-2] : S.chain[S.chain.length-1];
+    if(!target){ log('info','Run at least one end-of-day check first.'); render(); return; }
+    target.reserves = R(target.liab*1.10); target.status='SOLVENT'; target.ratio=1.10; target.tampered=true;
+    log('warn',`✏️ Scenario: someone edited Block #${target.n} (Day ${target.day}) so it shows 110% reserves. Click "Verify chain integrity".`);
+    render();
+  }
+}
+function nextDayQuiet(){ S.day++; for(const c of S.customers){ if(c.fake) continue; const d=R((Math.random()-0.45)*0.08*c.bal); const nb=Math.max(0,c.bal+d); S.escrow+=(nb-c.bal); c.bal=nb; } }
+
+async function checkIntegrity(){
+  let ok=true, firstBad=null;
+  for(let i=0;i<S.chain.length;i++){
+    const b=S.chain[i]; const recomputed = await blockHash(b);
+    b.broken = recomputed!==b.hash || (i>0 && b.prev!==S.chain[i-1].hash);
+    if(b.broken && ok){ ok=false; firstBad=b; }
+  }
+  if(!S.chain.length) log('info','No blocks yet.');
+  else if(ok) log('ok',`🔗 Chain intact: all ${S.chain.length} block hashes recompute correctly and link to each other.`);
+  else log('bad',`🔗 TAMPERING DETECTED in Block #${firstBad.n} (Day ${firstBad.day}): its contents no longer match its hash. On a real network the other nodes (bank, regulator) reject the edited copy, so the original record stands.`);
+  render();
+}
+
+/* ---------- verify ---------- */
+function fillVerify(){
+  const c = S.customers.find(x=>x.id===$('custSel').value); if(!c) return;
+  $('vId').value=c.id; $('vBal').value=(c.bal/100).toString(); $('vSalt').value=c.salt; $('proofOut').innerHTML='';
+}
+async function verify(){
+  const out=$('proofOut');
+  const last=[...S.chain].reverse().find(b=>b.status!=='REJECTED');
+  if(!last || !S.tree || S.tree.day!==last.day){ out.innerHTML='<div class="verdict bad">No committed snapshot available for the current day yet. Run the end-of-day check first.</div>'; return; }
+  const id=$('vId').value.trim(), bal=Math.round(parseFloat(String($('vBal').value).replace(/[,₹\s]/g,''))*100), salt=$('vSalt').value.trim();
+  const me={id,bal,salt};
+  const myLeaf = await leafHash(me);
+  const idx = S.tree.levels[0].findIndex(l=>hex(l.hash)===hex(myLeaf));
+  let html=`<div class="proof"><div class="p">My leaf = SHA-256("${id}|${bal}|salt") = <span class="hash">${short(myLeaf)}</span>, amount ${fmt(bal)}</div>`;
+  if(idx<0){
+    out.innerHTML = html+`</div><div class="verdict bad">✗ No matching entry in the snapshot committed on-chain for Day ${last.day}. If my ID, balance and salt are correct, my money was left out of the liabilities the fintech declared.</div><div class="btns" style="margin-top:8px"><button class="b danger" id="btnDispute">⚑ Report to regulator</button></div>`;
+    $('btnDispute').onclick=()=>{ log('bad',`⚑ Customer ${id} proved their ${fmt(bal)} balance is missing from Day ${last.day}'s on-chain liabilities. Under-reported liabilities are now confirmed, and the regulator has been notified with the proof attached.`); S.lastStatus='bad'; render(); };
+    return;
+  }
+  const path = proofFor(S.tree.levels, idx);
+  let h=myLeaf, sum=bal, negSib=false;
+  for(let i=0;i<path.length;i++){
+    const s=path[i]; if(s.sum<0) negSib=true;
+    h = s.isLeft ? await sha(cat(s.hash,u256(s.sum),h,u256(sum))) : await sha(cat(h,u256(sum),s.hash,u256(s.sum)));
+    sum += s.sum;
+    html+=`<div class="p">Level ${i+1}: combine with sibling <span class="hash">${short(s.hash)}</span> (${fmt(s.sum)}) → <span class="hash">${short(h)}</span>, running total ${fmt(sum)}</div>`;
+  }
+  const match = hex(h)===last.root && sum===last.liab;
+  html+=`<div class="p">On-chain root (Block #${last.n}): <span class="hash">${short(last.root)}</span>, total ${fmt(last.liab)}</div></div>`;
+  out.innerHTML = html + (match && !negSib
+    ? `<div class="verdict ok">✓ Verified. My ${fmt(bal)} is counted in the ${fmt(last.liab)} the fintech declared on-chain, and I learned nothing about any other customer's balance.</div>`
+    : `<div class="verdict bad">✗ Proof does not match the on-chain root. Check the amount or salt, or the fintech changed its books after committing.</div>`);
+}
+
+/* ---------- render ---------- */
+function lockButtons(v){ ['btnRun','btnNext','btnReset','btnIntegrity','btnVerify'].forEach(id=>$(id).disabled=v); document.querySelectorAll('[data-sc]').forEach(b=>b.disabled=v); }
+function render(){
+  $('dayLabel').textContent=`Day ${S.day} · ${dateOf(S.day)}`;
+  const pill=$('statusPill');
+  const st={idle:['idle','● Not yet checked'],ok:['ok','● Solvent, verified on-chain'],bad:['bad','● ALERT: shortfall or fraud detected'],'warn-hidden':['warn','● Looks solvent; customers should verify']}[S.lastStatus];
+  pill.className='pill '+st[0]; pill.textContent=st[1];
+  // ledger
+  $('ledger').innerHTML = S.customers.map(c=>`<tr class="${c.excluded?'excluded':''} ${c.fake?'fake':''}"><td>${c.name}</td><td class="mono">${c.id}</td><td class="num">${fmt(c.bal)}</td></tr>`).join('')
+    + `<tr><td colspan="2"><b>True total owed</b></td><td class="num"><b>${fmt(liveLiabilities())}</b></td></tr>`;
+  // escrow slider
+  const sl=$('escrowSlider'); const max=Math.round(liveLiabilities()*1.3);
+  sl.max=max; sl.step=Math.max(1,Math.round(max/200)); sl.value=S.escrow; $('escrowVal').textContent=fmt(S.escrow);
+  // kpis from last block
+  const last=S.chain[S.chain.length-1];
+  if(last && last.status!=='REJECTED'){
+    $('kL').textContent=fmt(last.liab); $('kR').textContent=fmt(last.reserves);
+    $('kX').textContent=(last.ratio*100).toFixed(1)+'%'; $('kX').className='v '+(last.ratio>=1?'ratio-ok':'ratio-bad');
+  } else if(last){ $('kL').textContent='Rejected'; $('kR').textContent='—'; $('kX').textContent='—'; $('kX').className='v ratio-bad'; }
+  else { $('kL').textContent='—'; $('kR').textContent='—'; $('kX').textContent='—'; $('kX').className='v'; }
+  // alerts
+  $('alerts').innerHTML = S.alerts.length? S.alerts.map(a=>`<div class="alert ${a.kind}"><time>${a.t}</time>${a.msg}</div>`).join('') : '<div class="note">No events yet. Click "Run end-of-day check" to start.</div>';
+  // chain
+  $('chain').innerHTML = S.chain.length? [...S.chain].reverse().map(b=>`
+    <div class="block ${b.status==='SHORTFALL'?'bad':''} ${b.status==='REJECTED'?'rej':''} ${b.broken?'broken':''}">
+      <div class="top"><span>Block #${b.n} · Day ${b.day}</span><span style="color:${b.status==='SOLVENT'?'var(--teal)':b.status==='REJECTED'?'var(--amber)':'var(--red)'}">${b.status}${b.tampered?' ✏️':''}</span></div>
+      <div class="row"><span>Liabilities root</span><span class="hash">${short(b.root)}</span></div>
+      <div class="row"><span>Total liabilities</span><span>${fmt(b.liab)}</span></div>
+      ${b.reserves!=null?`<div class="row"><span>Bank-attested reserves</span><span>${fmt(b.reserves)}</span></div><div class="row"><span>Bank signature</span><span class="hash">${short(b.sig)}</span></div>`:`<div class="row"><span>Note</span><span>${b.note}</span></div>`}
+      <div class="row"><span>Prev hash</span><span class="hash">${short(b.prev)}</span></div>
+      <div class="row"><span>Block hash</span><span class="hash">${short(b.hash)}</span></div>
+      ${b.broken?'<div class="row" style="color:var(--red);font-weight:700"><span>⚠ Contents don\'t match hash</span><span></span></div>':''}
+    </div>`).join('') : '<div class="note">No blocks yet.</div>';
+  // tree
+  renderTree();
+  // chart
+  renderChart();
+  // verify select
+  const sel=$('custSel'); const cur=sel.value;
+  sel.innerHTML = S.customers.filter(c=>!c.fake).map(c=>`<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+  if(cur && S.customers.some(c=>c.id===cur)) sel.value=cur;
+}
+function renderTree(){
+  const box=$('treeBox');
+  if(!S.tree){ box.innerHTML='<div class="note">Run the end-of-day check to build today\'s tree.</div>'; return; }
+  const L=S.tree.levels; const leaves=Math.max(...L.map(l=>l.length)); const W=Math.max(440, leaves*92); const lh=74; const H=L.length*lh+10;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;margin:auto">`;
+  const pos=(lvl,i)=>{ const n=L[lvl].length; const slot=W/n; return [slot*i+slot/2, H-lvl*lh-38]; };
+  for(let lvl=1;lvl<L.length;lvl++) for(let i=0;i<L[lvl].length;i++){ const [x,y]=pos(lvl,i); for(const c of [2*i,2*i+1]){ const [cx,cy]=pos(lvl-1,c); svg+=`<line x1="${x}" y1="${y+20}" x2="${cx}" y2="${cy-20}" stroke="#C9D3E2" stroke-width="1.2"/>`; } }
+  for(let lvl=0;lvl<L.length;lvl++) for(let i=0;i<L[lvl].length;i++){
+    const nd=L[lvl][i]; const [x,y]=pos(lvl,i); const isRoot=lvl===L.length-1; const w=isRoot?150:88;
+    const fill=isRoot?'#0B1F3A':nd.fake?'#FDECEC':nd.pad?'#F4F6FA':lvl===0?'#F3EFFF':'#EEF3FA';
+    const tc=isRoot?'#fff':'#1B2333';
+    svg+=`<rect x="${x-w/2}" y="${y-20}" width="${w}" height="40" rx="7" fill="${fill}" stroke="${isRoot?'#0B1F3A':nd.fake?'#E07B7B':'#D5DDEA'}"/>`;
+    const top = lvl===0 ? (nd.pad?'(empty)':nd.label) : isRoot ? 'ROOT → on-chain' : hex(nd.hash).slice(0,8);
+    svg+=`<text x="${x}" y="${y-4}" text-anchor="middle" font-size="${lvl===0?10.5:10}" fill="${tc}" font-family="Inter" font-weight="600">${top}</text>`;
+    svg+=`<text x="${x}" y="${y+11}" text-anchor="middle" font-size="9.5" fill="${isRoot?'#9FE9DC':'#5B6678'}">${isRoot? hex(nd.hash).slice(0,8)+'… ' : ''}${fmt(nd.sum).replace('₹','₹ ')}</text>`;
+  }
+  svg+='</svg>'; box.innerHTML=svg;
+}
+function renderChart(){
+  const pts=S.chain.filter(b=>b.ratio!=null);
+  if(pts.length<1){ $('chart').innerHTML=''; return; }
+  const W=520,H=150,pl=36,pr=10,pt=14,pb=22; const ys=pts.map(p=>p.ratio*100); const lo=Math.min(60,...ys)-5, hi=Math.max(115,...ys)+5;
+  const X=i=> pts.length===1? (pl+(W-pl-pr)/2) : pl+i*(W-pl-pr)/(pts.length-1); const Y=v=> pt+(hi-v)*(H-pt-pb)/(hi-lo);
+  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><text x="${pl}" y="10" font-size="10" fill="#5B6678" font-family="Inter" font-weight="600">Reserve ratio by day</text>`;
+  s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(100)}" y2="${Y(100)}" stroke="#D64545" stroke-dasharray="4 3"/><text x="${pl-4}" y="${Y(100)+3}" font-size="9" text-anchor="end" fill="#D64545" font-family="Inter">100%</text>`;
+  s+=`<polyline fill="none" stroke="#0E9F8A" stroke-width="2" points="${pts.map((p,i)=>X(i)+','+Y(p.ratio*100)).join(' ')}"/>`;
+  pts.forEach((p,i)=>{ s+=`<circle cx="${X(i)}" cy="${Y(p.ratio*100)}" r="3.5" fill="${p.ratio>=1?'#0E9F8A':'#D64545'}"/><text x="${X(i)}" y="${H-6}" font-size="9" text-anchor="middle" fill="#5B6678" font-family="Inter">D${p.day}</text>`; });
+  $('chart').innerHTML=s+'</svg>';
+}
+
+/* ---------- wire up ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('on',x===b)); document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.v)); });
+$('btnRun').onclick=runEOD; $('btnNext').onclick=nextDay; $('btnIntegrity').onclick=checkIntegrity; $('btnVerify').onclick=verify;
+$('btnReset').onclick=()=>{ if(busy) return; S=freshState(); ['s1','s2','s3'].forEach(s=>setStep(s,null)); $('proofOut').innerHTML=''; render(); fillVerify(); };
+$('custSel').onchange=fillVerify;
+$('escrowSlider').oninput=e=>{ S.escrow=+e.target.value; $('escrowVal').textContent=fmt(S.escrow); };
+$('escrowSlider').onchange=()=>{ log('warn',`Escrow balance manually set to ${fmt(S.escrow)}. Run the end-of-day check to see what the contract says.`); render(); };
+document.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>scenario(b.dataset.sc));
+
+(async()=>{ await initBank(); S=freshState(); render(); fillVerify(); })();
+})();
+</script>
+</body>
+</html>
